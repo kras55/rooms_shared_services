@@ -1,0 +1,16 @@
+services:
+  main:
+    image: 391376373129.dkr.ecr.us-east-1.amazonaws.com/rooms_content
+    build:
+      context: ..
+      dockerfile: ./docker/main/Dockerfile
+
+  component:
+    build:
+      context: ..
+      dockerfile: ./docker/component/Dockerfile
+
+  wordpress:
+    build:
+      context: ..
+      dockerfile: ./docker/woocommerce/Dockerfile

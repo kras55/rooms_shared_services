@@ -1,0 +1,6 @@
+services:
+  main:
+    container_name: main_run
+    extends:
+      file: base.yml
+      service: main

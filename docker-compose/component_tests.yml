@@ -1,0 +1,23 @@
+services:
+  main:
+    container_name: main_component_run
+    extends:
+      file: base.yml
+      service: main
+    expose:
+      - "8000"
+    networks:
+      - cms_component_tests
+
+  component:
+    container_name: main_component_test
+    extends:
+      file: base.yml
+      service: component
+    depends_on:
+      - main
+    networks:
+      - cms_component_tests
+
+networks:
+  cms_component_tests:

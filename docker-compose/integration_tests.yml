@@ -1,0 +1,33 @@
+version: '3.1'
+
+services:
+  main:
+    container_name: main_integration_run
+    extends:
+      file: base.yml
+      service: main
+    depends_on:
+      - "dynamodb-local"
+    links:
+      - "dynamodb-local"
+    environment:
+      INTEGRATION_TEST: 'true'
+      AWS_ACCESS_KEY_ID: 'DUMMYIDEXAMPLE'
+      AWS_SECRET_ACCESS_KEY: 'DUMMYEXAMPLEKEY'
+      REGION: 'us-east-1'
+    networks:
+      - shared_services_integration_tests
+
+  dynamodb-local:
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"
+    working_dir: /home/dynamodblocal
+    networks:
+      - shared_services_integration_tests
+
+networks:
+  shared_services_integration_tests:
