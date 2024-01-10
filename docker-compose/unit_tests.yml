@@ -1,0 +1,13 @@
+services:
+  main:
+    container_name: main_unit_tests
+    extends:
+      file: base.yml
+      service: main
+    environment:
+      - UNIT_TEST=true
+    networks:
+      - cms_unit_tests
+
+networks:
+  cms_unit_tests:
