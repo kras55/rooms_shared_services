@@ -6,6 +6,8 @@ services:
       service: main
     environment:
       - UNIT_TEST=true
+      - HTTP_LOGGING_HOST
+      - HTTP_LOGGING_PATH         
     networks:
       - cms_unit_tests
 
