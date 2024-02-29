@@ -17,7 +17,7 @@ def get_logger(name: str, use_http: bool = False, use_stream: bool = True) -> lo
     """
     logger = logging.getLogger(name)
     if use_http:
-        settings = Settings()
+        settings = Settings()  # type: ignore
         http_handler = HTTPHandler(
             settings.host,
             settings.path,
