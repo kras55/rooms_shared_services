@@ -53,6 +53,7 @@ class DynamodbStorageClient(AbstractStorageClient):
                 )
             dynamodb_resource.create_table(TableName=tablename, **create_table_params)
         self.table: Table = dynamodb_resource.Table(tablename)  # type: ignore
+        self.client = boto3.client("dynamodb", **resource_params)
 
     def __call__(self):
         logger.info("Hello world")
@@ -108,7 +109,22 @@ class DynamodbStorageClient(AbstractStorageClient):
             for key in keys:
                 batch.delete_item(Key=key, **call_params)
 
-    def bulk_get(self, filter_params: dict, condition: ConditionLiteral = "AND"):
+    def bulk_get(self, filter_params: dict | None = None, condition: ConditionLiteral = "AND"):
+        scan_params = self.create_scan_params(filter_params=filter_params, condition=condition)
+        resp = self.table.scan(**scan_params)
+        return resp["Items"]
+
+    def create_scan_params(self, condition: ConditionLiteral, filter_params: dict | None = None):
+        scan_params = {}
+        if filter_params:
+            FilterExpression = self.create_filter_expression(  # noqa: N806
+                filter_params=filter_params,
+                condition=condition,
+            )  # noqa: N806
+            scan_params.update({"FilterExpression": FilterExpression})
+        return scan_params
+
+    def create_filter_expression(self, filter_params: dict, condition: ConditionLiteral):
         filter_params_list = list(filter_params.items())
         first_params_item = filter_params_list.pop(0)
         FilterExpression = Attr(first_params_item[0]).eq(first_params_item[1])  # noqa: N806
@@ -124,5 +140,53 @@ class DynamodbStorageClient(AbstractStorageClient):
                     )
                 case _:
                     raise ValueError("Invalid filter expression condition")
-        resp = self.table.scan(FilterExpression=FilterExpression)
-        return resp["Items"]
+        return FilterExpression
+
+    def validate_data_elem(self, data_elem_value: dict) -> str | int | float | dict | list | None:
+        data_type = list(data_elem_value.keys())[0]
+        parsed_value = data_elem_value[data_type]
+        validated_value: str | int | float | dict | list | None
+        match data_type:
+            case "S":
+                assert isinstance(parsed_value, str)
+                validated_value = parsed_value
+                if validated_value == "None":
+                    validated_value = None
+            case "N":
+                assert isinstance(parsed_value, str)
+                if "," in parsed_value:
+                    validated_value = float(parsed_value)
+                else:
+                    validated_value = int(parsed_value)
+            case "BOOL":
+                match parsed_value:
+                    case "false":
+                        validated_value = False  # noqa: WPS220
+                    case "true":
+                        validated_value = True  # noqa: WPS220
+                    case _:
+                        raise ValueError("invalid boolean")  # noqa: WPS220
+            case "NULL":
+                validated_value = None
+            case "M":
+                assert isinstance(parsed_value, dict)
+                validated_value = {
+                    elem_key: self.validate_data_elem(elem_value) for elem_key, elem_value in parsed_value
+                }
+            case "L":
+                validated_value = [self.validate_data_elem(elem_item) for elem_item in parsed_value]
+        return validated_value
+
+    def parse_annotated_response(self, data_item: dict):
+        return {
+            data_elem_key: self.validate_data_elem(data_elem_value)
+            for data_elem_key, data_elem_value in data_item.items()
+        }
+
+    def get_by_pages(self, filter_params: dict | None = None, condition: ConditionLiteral = "AND"):
+        paginator = self.client.get_paginator("scan")
+        scan_params = self.create_scan_params(filter_params=filter_params, condition=condition)
+        for page in paginator.paginate(TableName=self.table.name, **scan_params):
+            table_items = page["Items"]
+            parsed_items = [self.parse_annotated_response(db_item) for db_item in table_items]
+            yield parsed_items

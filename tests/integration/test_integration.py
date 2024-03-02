@@ -93,7 +93,7 @@ class TestDatabaseConnection:  # noqa: WPS306
         result_item = self.dynamodb_client.retrieve(key=item_key)
         assert isinstance(result_item, dict)
         for key in item_key.keys():
-            assert item_key[key] == result_item.pop(key)
+            assert item_key[key] == result_item.pop(key)  # noqa: WPS204
         assert result_item == attribute
 
     def test_create(self, attribute, item_key, table_item):
@@ -156,3 +156,16 @@ class TestDatabaseConnection:  # noqa: WPS306
         self.dynamodb_client.bulk_delete(keys=[item_key])
         scanned_items = self.table.scan()["Items"]
         assert not scanned_items
+
+    def test_pagination(self, attribute, item_key, put_result):
+        assert isinstance(put_result, dict)
+        for batch in self.dynamodb_client.get_by_pages(filter_params={}):
+            assert isinstance(batch, list)
+            for result_item in batch:
+                logger.info("assert equal:")
+                for key in item_key.keys():
+                    logger.info(item_key[key])
+                    logger.info(result_item[key])
+                    logger.info("***")
+                    assert item_key[key] == result_item.pop(key)
+                assert result_item == attribute
