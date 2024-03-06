@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 import boto3
 from boto3.dynamodb.conditions import Attr
+from mypy_boto3_dynamodb import DynamoDBClient
 from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
 from pydantic_settings import BaseSettings
 
@@ -53,7 +54,7 @@ class DynamodbStorageClient(AbstractStorageClient):
                 )
             dynamodb_resource.create_table(TableName=tablename, **create_table_params)
         self.table: Table = dynamodb_resource.Table(tablename)  # type: ignore
-        self.client = boto3.client("dynamodb", **resource_params)
+        self.client: DynamoDBClient = boto3.client("dynamodb", **resource_params)
 
     def __call__(self):
         logger.info("Hello world")
@@ -154,7 +155,7 @@ class DynamodbStorageClient(AbstractStorageClient):
                     validated_value = None
             case "N":
                 assert isinstance(parsed_value, str)
-                if "," in parsed_value:
+                if "." in parsed_value:
                     validated_value = float(parsed_value)
                 else:
                     validated_value = int(parsed_value)
@@ -171,7 +172,7 @@ class DynamodbStorageClient(AbstractStorageClient):
             case "M":
                 assert isinstance(parsed_value, dict)
                 validated_value = {
-                    elem_key: self.validate_data_elem(elem_value) for elem_key, elem_value in parsed_value
+                    elem_key: self.validate_data_elem(elem_value) for elem_key, elem_value in parsed_value.items()
                 }
             case "L":
                 validated_value = [self.validate_data_elem(elem_item) for elem_item in parsed_value]
@@ -183,10 +184,18 @@ class DynamodbStorageClient(AbstractStorageClient):
             for data_elem_key, data_elem_value in data_item.items()
         }
 
-    def get_by_pages(self, filter_params: dict | None = None, condition: ConditionLiteral = "AND"):
+    def get_by_pages(
+        self,
+        filter_params: dict | None = None,
+        condition: ConditionLiteral = "AND",
+        page_size: int = 100,
+    ):
         paginator = self.client.get_paginator("scan")
         scan_params = self.create_scan_params(filter_params=filter_params, condition=condition)
-        for page in paginator.paginate(TableName=self.table.name, **scan_params):
+        for page in paginator.paginate(  # noqa: WPS352
+            TableName=self.table.name,
+            PaginationConfig={"PageSize": page_size},
+            **scan_params,
+        ):
             table_items = page["Items"]
-            parsed_items = [self.parse_annotated_response(db_item) for db_item in table_items]
-            yield parsed_items
+            yield [self.parse_annotated_response(db_item) for db_item in table_items]
