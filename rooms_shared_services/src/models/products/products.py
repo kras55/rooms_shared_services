@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import Field, HttpUrl
 
 from rooms_shared_services.src.storage.models import BaseDynamodbModel
 
 UNSET = Literal["UNSET"]
 
 
-class ProductDescription(BaseModel):
+class ProductDescription(BaseDynamodbModel):
     language_code: str
     full: str | None = None
     short: str | None = None
@@ -17,7 +17,7 @@ class ProductDescription(BaseModel):
     approved: bool | None = None
 
 
-class ProductBrand(BaseModel):
+class ProductBrand(BaseDynamodbModel):
     id: UUID | None = None
     name: str | None = None
     website: HttpUrl | None = None
@@ -26,7 +26,7 @@ class ProductBrand(BaseModel):
     logo: HttpUrl | None = None
 
 
-class ProductCollection(BaseModel):
+class ProductCollection(BaseDynamodbModel):
     id: UUID | None = None
     name: str | None = None
     catalog_pdf: HttpUrl | None = None
@@ -34,7 +34,7 @@ class ProductCollection(BaseModel):
     logo: HttpUrl | None = None
 
 
-class ColorAttributes(BaseModel):
+class ColorAttributes(BaseDynamodbModel):
     main_color: str | None = None
     main_color_image: HttpUrl | None = None
     color: str | None = None
@@ -47,13 +47,13 @@ class ColorAttributes(BaseModel):
     cabinet_color_image: HttpUrl | None = None
 
 
-class ImageSet(BaseModel):
+class ImageSet(BaseDynamodbModel):
     small: HttpUrl | None = None
     medium: HttpUrl | None = None
     large: HttpUrl | None = None
 
 
-class PackagePack(BaseModel):
+class PackagePack(BaseDynamodbModel):
     ean: str | None = None
     weight: float | None = None
     length: float | None = None
@@ -116,7 +116,6 @@ class ProductItem(BaseDynamodbModel):
     related_ids: list[UUID] | None | UNSET = UNSET
     upsell_ids: list[UUID] | None | UNSET = UNSET
     cross_sell_ids: list[UUID] | None | UNSET = UNSET
-    categories: list[str] | None | UNSET = UNSET
     tags: list[str] | None | UNSET = UNSET
     image_sets: list[ImageSet] | None | UNSET = UNSET
     descriptions: list[ProductDescription] | None | UNSET = UNSET
@@ -133,6 +132,6 @@ class ProductItem(BaseDynamodbModel):
     ean: str | None | UNSET = UNSET
     withdrawn: bool | None | UNSET = UNSET
     pcn: str | None | UNSET = UNSET
-    catgories: list[str] | None | UNSET = UNSET
-    categories: RelatedValues | None | UNSET = UNSET
+    categories: list[str] | None | UNSET = "UNSET"
+    wc_categories: RelatedValues | None | UNSET = "UNSET"
     published: RelatedValues | None | UNSET = UNSET

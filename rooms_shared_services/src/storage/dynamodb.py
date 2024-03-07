@@ -14,6 +14,22 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 ConditionLiteral = Literal["OR", "AND"]
+FilterAttrCondition = Literal[
+    "attribute_type",
+    "begins_with",
+    "between",
+    "contains",
+    "eq",
+    "exists",
+    "gt",
+    "gte",
+    "is_in",
+    "lt",
+    "lte",
+    "ne",
+    "not_exists",
+    "size",
+]
 
 
 class DynamodbSettings(BaseSettings):
@@ -110,25 +126,51 @@ class DynamodbStorageClient(AbstractStorageClient):
             for key in keys:
                 batch.delete_item(Key=key, **call_params)
 
-    def bulk_get(self, filter_params: dict | None = None, condition: ConditionLiteral = "AND"):
-        scan_params = self.create_scan_params(filter_params=filter_params, condition=condition)
+    def bulk_get(
+        self,
+        filter_params: dict | None = None,
+        condition: ConditionLiteral = "AND",
+        filter_attr_condition: FilterAttrCondition = "eq",
+        negate: bool = False,
+    ):
+        scan_params = self.create_scan_params(
+            filter_params=filter_params,
+            condition=condition,
+            filter_attr_condition=filter_attr_condition,
+            negate=negate,
+        )
         resp = self.table.scan(**scan_params)
         return resp["Items"]
 
-    def create_scan_params(self, condition: ConditionLiteral, filter_params: dict | None = None):
+    def create_scan_params(
+        self,
+        filter_attr_condition: FilterAttrCondition,
+        condition: ConditionLiteral,
+        negate: bool,
+        filter_params: dict | None = None,
+    ):
         scan_params = {}
         if filter_params:
             FilterExpression = self.create_filter_expression(  # noqa: N806
                 filter_params=filter_params,
+                filter_attr_condition=filter_attr_condition,
                 condition=condition,
+                negate=negate,
             )  # noqa: N806
             scan_params.update({"FilterExpression": FilterExpression})
         return scan_params
 
-    def create_filter_expression(self, filter_params: dict, condition: ConditionLiteral):
+    def create_filter_expression(
+        self,
+        filter_params: dict,
+        filter_attr_condition: FilterAttrCondition,
+        condition: ConditionLiteral,
+        negate: bool = False,
+    ):
         filter_params_list = list(filter_params.items())
         first_params_item = filter_params_list.pop(0)
-        FilterExpression = Attr(first_params_item[0]).eq(first_params_item[1])  # noqa: N806
+        attr_method = getattr(Attr(first_params_item[0]), filter_attr_condition)
+        FilterExpression = attr_method(first_params_item[1])  # noqa: N806
         for next_params_item in filter_params_list:
             match condition:
                 case "AND":
@@ -141,6 +183,8 @@ class DynamodbStorageClient(AbstractStorageClient):
                     )
                 case _:
                     raise ValueError("Invalid filter expression condition")
+        if negate:
+            FilterExpression = ~(FilterExpression)  # noqa: N806
         return FilterExpression
 
     def validate_data_elem(self, data_elem_value: dict) -> str | int | float | dict | list | None:
@@ -184,17 +228,25 @@ class DynamodbStorageClient(AbstractStorageClient):
             for data_elem_key, data_elem_value in data_item.items()
         }
 
-    def get_by_pages(
+    def get_by_pages(  # noqa: WPS211
         self,
         filter_params: dict | None = None,
+        filter_attr_condition: FilterAttrCondition = "eq",
         condition: ConditionLiteral = "AND",
-        page_size: int = 100,
+        page_size: int | None = 100,
+        negate: bool = False,
     ):
         paginator = self.client.get_paginator("scan")
-        scan_params = self.create_scan_params(filter_params=filter_params, condition=condition)
+        scan_params = self.create_scan_params(
+            filter_params=filter_params,
+            filter_attr_condition=filter_attr_condition,
+            condition=condition,
+            negate=negate,
+        )
+        if page_size:
+            scan_params.update({"PaginationConfig": {"PageSize": page_size}})
         for page in paginator.paginate(  # noqa: WPS352
             TableName=self.table.name,
-            PaginationConfig={"PageSize": page_size},
             **scan_params,
         ):
             table_items = page["Items"]
