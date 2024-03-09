@@ -159,7 +159,7 @@ class TestDatabaseConnection:  # noqa: WPS306
 
     def test_pagination(self, attribute, item_key, put_result):
         assert isinstance(put_result, dict)
-        for batch in self.dynamodb_client.get_by_pages(filter_params={}):
+        for batch in self.dynamodb_client.get_by_pages():
             assert isinstance(batch, list)
             for result_item in batch:
                 logger.info("assert equal:")

@@ -20,7 +20,7 @@ Issues = "https://github.com/kras55/rooms_shared_services/issues"
 
 [tool.poetry]
 name = "rooms_shared_services"
-version = "0.1.33"
+version = "0.1.38"
 description = ""
 authors = ["kras55 <dkras5577@gmail.com>"]
 readme = "README.md"
@@ -30,6 +30,7 @@ python = "3.11.7"
 pydantic = "^2.5.2"
 pydantic-settings = "^2.1.0"
 backoff = "^2.2.1"
+pyyaml = "^6.0.1"
 
 
 [build-system]

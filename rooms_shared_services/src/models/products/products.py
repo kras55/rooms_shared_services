@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import Field, HttpUrl
+from pydantic import Field, HttpUrl, field_validator
 
 from rooms_shared_services.src.storage.models import BaseDynamodbModel
 
@@ -85,53 +85,74 @@ class RelatedValues(BaseDynamodbModel):
 
 class ProductItem(BaseDynamodbModel):
     id: UUID = Field(default_factory=uuid4)
-    original_ident: str | None | UNSET = UNSET
-    ident_code: str | None | UNSET = UNSET
-    name: str | None | UNSET = UNSET
-    slug: str | None | UNSET = UNSET
-    created_at: datetime | None | UNSET = UNSET
-    modified_at: datetime | None | UNSET = UNSET
-    original_description_full: str | None | UNSET = UNSET
-    original_description_short: str | None | UNSET = UNSET
-    original_description_language_code: str | None | UNSET = UNSET
-    origin_country: str | None | UNSET = UNSET
-    pickup_location: str | None | UNSET = UNSET
-    pickup_address: str | None | UNSET = UNSET
-    shipment_term_code: str | None | UNSET = UNSET
-    catalog_pdf: HttpUrl | None | UNSET = UNSET
-    pickup_downtime: int | None | UNSET = UNSET
-    brand_catalog_pages: list[int] | None | UNSET = UNSET
-    collection_catalog_pages: list[int] | None | UNSET = UNSET
-    brand_website_links: list[HttpUrl] | None | UNSET = UNSET
-    sku: str | None | UNSET = UNSET
-    wc_price: RelatedValues | None | UNSET = UNSET
-    retail_price: float | None | UNSET = UNSET
-    wholesale_price: int | None | UNSET = UNSET
-    currency_code: str | None | UNSET = UNSET
-    gross_weight: float | None | UNSET = UNSET
-    net_weight: float | None | UNSET = UNSET
-    height: float | None | UNSET = UNSET
-    width: float | None | UNSET = UNSET
-    depth: float | None | UNSET = UNSET
-    related_ids: list[UUID] | None | UNSET = UNSET
-    upsell_ids: list[UUID] | None | UNSET = UNSET
-    cross_sell_ids: list[UUID] | None | UNSET = UNSET
-    tags: list[str] | None | UNSET = UNSET
-    image_sets: list[ImageSet] | None | UNSET = UNSET
-    descriptions: list[ProductDescription] | None | UNSET = UNSET
-    wc_descriptions: RelatedValues | None | UNSET = UNSET
-    color_attributes: ColorAttributes | None | UNSET = UNSET
-    brand: ProductBrand | None | UNSET = UNSET
-    collection: ProductCollection | None | UNSET = UNSET
-    ean_GTIN: str | None | UNSET = UNSET  # noqa: N815
-    qty_of_boxes: int | None | UNSET = UNSET
-    brand_code: str | None | UNSET = UNSET
-    volume_m3: float | None | UNSET = UNSET
-    package_packs: list[PackagePack] | None | UNSET = UNSET
-    qty_per_box: int | None | UNSET = UNSET
-    ean: str | None | UNSET = UNSET
-    withdrawn: bool | None | UNSET = UNSET
-    pcn: str | None | UNSET = UNSET
+    original_ident: str | None | UNSET = "UNSET"
+    ident_code: str | None | UNSET = "UNSET"
+    name: str | None | UNSET = "UNSET"
+    slug: str | None | UNSET = "UNSET"
+    created_at: datetime | None | UNSET = "UNSET"
+    modified_at: datetime | None | UNSET = "UNSET"
+    original_description_full: str | None | UNSET = "UNSET"
+    original_description_short: str | None | UNSET = "UNSET"
+    original_description_language_code: str | None | UNSET = "UNSET"
+    origin_country: str | None | UNSET = "UNSET"
+    pickup_location: str | None | UNSET = "UNSET"
+    pickup_address: str | None | UNSET = "UNSET"
+    shipment_term_code: str | None | UNSET = "UNSET"
+    catalog_pdf: HttpUrl | None | UNSET = "UNSET"
+    pickup_downtime: int | None | UNSET = "UNSET"
+    brand_catalog_pages: list[int] | None | UNSET = "UNSET"
+    collection_catalog_pages: list[int] | None | UNSET = "UNSET"
+    brand_website_links: list[HttpUrl] | None | UNSET = "UNSET"
+    sku: str | None | UNSET = "UNSET"
+    wc_sku: str | None | UNSET = "UNSET"
+    wc_price: RelatedValues | None | UNSET = "UNSET"
+    retail_price: float | None | UNSET = "UNSET"
+    wholesale_price: int | None | UNSET = "UNSET"
+    currency_code: str | None | UNSET = "UNSET"
+    gross_weight: float | None | UNSET = "UNSET"
+    net_weight: float | None | UNSET = "UNSET"
+    height: float | None | UNSET = "UNSET"
+    width: float | None | UNSET = "UNSET"
+    depth: float | None | UNSET = "UNSET"
+    related_ids: list[UUID] | None | UNSET = "UNSET"
+    upsell_ids: list[UUID] | None | UNSET = "UNSET"
+    cross_sell_ids: list[UUID] | None | UNSET = "UNSET"
+    tags: list[str] | None | UNSET = "UNSET"
+    image_sets: list[ImageSet] | None | UNSET = "UNSET"
+    descriptions: list[ProductDescription] | None | UNSET = "UNSET"
+    wc_descriptions: RelatedValues | None | UNSET = "UNSET"
+    color_attributes: ColorAttributes | None | UNSET = "UNSET"
+    brand: ProductBrand | None | UNSET = "UNSET"
+    collection: ProductCollection | None | UNSET = "UNSET"
+    ean_GTIN: str | None | UNSET = "UNSET"  # noqa: N815
+    qty_of_boxes: int | None | UNSET = "UNSET"
+    brand_code: str | None | UNSET = "UNSET"
+    volume_m3: float | None | UNSET = "UNSET"
+    package_packs: list[PackagePack] | None | UNSET = "UNSET"
+    qty_per_box: int | None | UNSET = "UNSET"
+    ean: str | None | UNSET = "UNSET"
+    withdrawn: bool | None | UNSET = "UNSET"
+    pcn: str | None | UNSET = "UNSET"
     categories: list[str] | None | UNSET = "UNSET"
     wc_categories: RelatedValues | None | UNSET = "UNSET"
-    published: RelatedValues | None | UNSET = UNSET
+    published: RelatedValues | None | UNSET = "UNSET"
+
+    @field_validator(
+        "brand_catalog_pages",
+        "collection_catalog_pages",
+        "brand_website_links",
+        "related_ids",
+        "upsell_ids",
+        "cross_sell_ids",
+        "tags",
+        "image_sets",
+        "descriptions",
+        "package_packs",
+        "categories",
+        mode="before",
+    )
+    @classmethod
+    def skip_invalid_lists(cls, item_value: Any) -> str:
+        if not isinstance(item_value, list) and item_value is not None:
+            return "UNSET"
+        return item_value

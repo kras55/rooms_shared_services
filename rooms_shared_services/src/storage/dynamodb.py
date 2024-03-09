@@ -228,26 +228,12 @@ class DynamodbStorageClient(AbstractStorageClient):
             for data_elem_key, data_elem_value in data_item.items()
         }
 
-    def get_by_pages(  # noqa: WPS211
-        self,
-        filter_params: dict | None = None,
-        filter_attr_condition: FilterAttrCondition = "eq",
-        condition: ConditionLiteral = "AND",
-        page_size: int | None = 100,
-        negate: bool = False,
-    ):
+    def get_by_pages(self, page_size: int | None = 100):
         paginator = self.client.get_paginator("scan")
-        scan_params = self.create_scan_params(
-            filter_params=filter_params,
-            filter_attr_condition=filter_attr_condition,
-            condition=condition,
-            negate=negate,
-        )
+        scan_params = {"TableName": self.table.name}
         if page_size:
             scan_params.update({"PaginationConfig": {"PageSize": page_size}})
-        for page in paginator.paginate(  # noqa: WPS352
-            TableName=self.table.name,
-            **scan_params,
-        ):
+        for page in paginator.paginate(**scan_params):
             table_items = page["Items"]
+            logger.info("Collected {} page items from dynamodb table {}".format(len(table_items), self.table.name))
             yield [self.parse_annotated_response(db_item) for db_item in table_items]
