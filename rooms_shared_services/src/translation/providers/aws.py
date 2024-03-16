@@ -9,4 +9,8 @@ client: TranslateClient = boto3.client("translate")
 
 class AWSTranslationProvider(AbstractTranslationProvider):
     def translate(self, txt: str, source: Language, target: Language):
-        return client.translate_text(Text=txt, SourceLanguageCode=source.name, TargetLanguageCode=target.name)
+        if source == target:
+            return txt
+        print("Starting translation: text {}, source {}, target {}".format(txt, source, target))
+        resp = client.translate_text(Text=txt, SourceLanguageCode=source.name, TargetLanguageCode=target.name)
+        return resp["TranslatedText"]

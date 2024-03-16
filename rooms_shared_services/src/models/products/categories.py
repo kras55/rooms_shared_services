@@ -10,6 +10,7 @@ class ProductCategory(BaseDynamodbModel):
     name: str
     id: int
     parent_id: int | None = None
+    parent_name: str | None = None
     description: str | None = None
     image: HttpUrl | None = None
     name_translations: TextTranslations | None = None

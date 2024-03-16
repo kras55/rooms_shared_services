@@ -1,4 +1,5 @@
 from decimal import Decimal
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel
@@ -19,6 +20,8 @@ class BaseDynamodbModel(BaseModel):
                 converted_item_value = [
                     self.convert_value(item_value_item, exclude_unset=exclude_unset) for item_value_item in item_value
                 ]
+            case Enum():
+                converted_item_value = item_value.name
             case _:
                 converted_item_value = str(item_value)
         return converted_item_value

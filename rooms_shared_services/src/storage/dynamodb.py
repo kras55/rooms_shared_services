@@ -3,11 +3,12 @@ from decimal import Decimal
 from typing import Any, Literal
 
 import boto3
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Attr, Key
 from mypy_boto3_dynamodb import DynamoDBClient
 from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
 from pydantic_settings import BaseSettings
 
+from rooms_shared_services.src.exceptions.storage import MoreThanOneItemFound
 from rooms_shared_services.src.storage.abstract import AbstractStorageClient
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,32 @@ class DynamodbStorageClient(AbstractStorageClient):
 
     def retrieve(self, key: dict, **call_params) -> dict:
         response = self.table.get_item(Key=key, **call_params)
-        return response["Item"]
+        try:
+            return response["Item"]
+        except KeyError:
+            return None
+
+    def index_query(self, index_name: str, attr_name: str, attr_value: str, **call_params) -> dict:
+        key_condition_expression = Key(attr_name).eq(attr_value)
+        return self.table.query(IndexName=index_name, KeyConditionExpression=key_condition_expression)
+
+    def retrieve_from_index(self, index_name: str, attr_name: str, attr_value: str, **call_params):
+        resp = self.index_query(index_name=index_name, attr_name=attr_name, attr_value=attr_value, **call_params)
+        match resp["Count"]:
+            case 1:
+                return resp["Items"][0]
+            case 0:
+                return None
+            case _:
+                raise MoreThanOneItemFound
+
+    def list_from_index(self, index_name: str, attr_name: str, attr_value: str, **call_params):
+        resp = self.index_query(index_name=index_name, attr_name=attr_name, attr_value=attr_value, **call_params)
+        match resp["Count"]:
+            case 0:
+                return []
+            case _:
+                return resp["Items"]
 
     def create(self, table_item: dict, **call_params) -> dict:
         return dict(self.table.put_item(Item=table_item, **call_params))
@@ -93,6 +119,13 @@ class DynamodbStorageClient(AbstractStorageClient):
             update_expression = "{} {} = {},".format(update_expression, update[0], value_name)
             expression_attribute_values[value_name] = update_value
         update_expression = update_expression[:-1]
+        print(
+            "update item: key {}, UpadteExspression {}, ExpressionAttributeValues {}".format(
+                key,
+                update_expression,
+                expression_attribute_values,
+            ),
+        )
         return dict(
             self.table.update_item(
                 Key=key,
@@ -228,12 +261,12 @@ class DynamodbStorageClient(AbstractStorageClient):
             for data_elem_key, data_elem_value in data_item.items()
         }
 
-    def get_by_pages(self, page_size: int | None = 100):
+    def get_by_pages(self, page_size: int | None = 100, consistent_read: bool = False):
         paginator = self.client.get_paginator("scan")
         scan_params = {"TableName": self.table.name}
         if page_size:
             scan_params.update({"PaginationConfig": {"PageSize": page_size}})
-        for page in paginator.paginate(**scan_params):
+        for page in paginator.paginate(**scan_params, ConsistentRead=consistent_read):
             table_items = page["Items"]
             logger.info("Collected {} page items from dynamodb table {}".format(len(table_items), self.table.name))
             yield [self.parse_annotated_response(db_item) for db_item in table_items]
