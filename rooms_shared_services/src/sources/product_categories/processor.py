@@ -20,11 +20,11 @@ class ProductCategoryProcessor(object):
         )
 
     def clean_table(self):
-        all_keys = []
         for batch in self.list_source_by_pages():
-            all_keys.extend([{"id": cat_item.id} for cat_item in batch])
-        if all_keys:
-            self.dynamodb_storage_client.bulk_delete(keys=all_keys)
+            batch_keys = [{"name": cat_item.name} for cat_item in batch]
+            print("{} batch keys added to deleete list".format(len(batch)))
+            if batch_keys:
+                self.dynamodb_storage_client.bulk_delete(keys=batch_keys)
 
     def create_update_dict(self, cat_model: ProductCategory, translate_attr: str):
         return {translate_attr: getattr(cat_model, translate_attr).dynamodb_dump()}
@@ -61,6 +61,16 @@ class ProductCategoryProcessor(object):
             cat_item_model.parent_id = parent_cat.id
         self.dynamodb_storage_client.create(table_item=cat_item_model.dynamodb_dump())
         return item_id
+
+    def retrieve_item(self, item_id: int):
+        resp = self.dynamodb_storage_client.retrieve_from_index(
+            index_name=self.settings.id_index,
+            attr_name="id",
+            attr_value=item_id,
+        )
+        if resp is None:
+            return None
+        return ProductCategory.validate_dynamodb_item(resp)
 
     def find_or_add(self, cat_item: tuple[str, str | None]):
         stored_cat_item = self.dynamodb_storage_client.retrieve(key={"name": cat_item[0]})

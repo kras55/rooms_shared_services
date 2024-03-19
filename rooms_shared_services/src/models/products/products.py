@@ -1,12 +1,14 @@
 from datetime import datetime
 from typing import Any, Literal
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from pydantic import Field, HttpUrl, field_validator
+from pydantic import HttpUrl, field_validator
 
+from rooms_shared_services.src.models.texts.translations import TextTranslations
 from rooms_shared_services.src.storage.models import BaseDynamodbModel
 
 UNSET = Literal["UNSET"]
+CurrencyCode = Literal["EUR", "ILS", "USD", "RUB"]
 
 
 class ProductDescription(BaseDynamodbModel):
@@ -83,8 +85,21 @@ class RelatedValues(BaseDynamodbModel):
     wc: LanguageRelatedValues
 
 
-class ProductItem(BaseDynamodbModel):
-    id: UUID = Field(default_factory=uuid4)
+class PriceValue(BaseDynamodbModel):
+    currency: CurrencyCode | UNSET = "UNSET"
+    value: float | UNSET = "UNSET"  # noqa: WPS110
+
+    @property
+    def valid(self):
+        return not (self.currency == "UNSET" or self.value == "UNSET")
+
+
+class PriceValueCollection(BaseDynamodbModel):
+    wc_israel_retail: PriceValue
+
+
+class ProductSourceItem(BaseDynamodbModel):
+    id: UUID | None | UNSET = "UNSET"
     original_ident: str | None | UNSET = "UNSET"
     ident_code: str | None | UNSET = "UNSET"
     name: str | None | UNSET = "UNSET"
@@ -105,10 +120,6 @@ class ProductItem(BaseDynamodbModel):
     brand_website_links: list[HttpUrl] | None | UNSET = "UNSET"
     sku: str | None | UNSET = "UNSET"
     wc_sku: str | None | UNSET = "UNSET"
-    wc_price: RelatedValues | None | UNSET = "UNSET"
-    retail_price: float | None | UNSET = "UNSET"
-    wholesale_price: int | None | UNSET = "UNSET"
-    currency_code: str | None | UNSET = "UNSET"
     gross_weight: float | None | UNSET = "UNSET"
     net_weight: float | None | UNSET = "UNSET"
     height: float | None | UNSET = "UNSET"
@@ -119,8 +130,7 @@ class ProductItem(BaseDynamodbModel):
     cross_sell_ids: list[UUID] | None | UNSET = "UNSET"
     tags: list[str] | None | UNSET = "UNSET"
     image_sets: list[ImageSet] | None | UNSET = "UNSET"
-    descriptions: list[ProductDescription] | None | UNSET = "UNSET"
-    wc_descriptions: RelatedValues | None | UNSET = "UNSET"
+
     color_attributes: ColorAttributes | None | UNSET = "UNSET"
     brand: ProductBrand | None | UNSET = "UNSET"
     collection: ProductCollection | None | UNSET = "UNSET"
@@ -136,6 +146,11 @@ class ProductItem(BaseDynamodbModel):
     categories: list[str] | None | UNSET = "UNSET"
     wc_categories: RelatedValues | None | UNSET = "UNSET"
     published: RelatedValues | None | UNSET = "UNSET"
+    wc_name_translations: TextTranslations | None | UNSET = "UNSET"
+    wc_full_description_translations: TextTranslations | None | UNSET = "UNSET"
+    wc_short_description_translations: TextTranslations | None | UNSET = "UNSET"
+    price_value_collection: PriceValueCollection | None | UNSET = "UNSET"
+    price_base: PriceValue | None | UNSET = "UNSET"
 
     @field_validator(
         "brand_catalog_pages",
@@ -146,7 +161,6 @@ class ProductItem(BaseDynamodbModel):
         "cross_sell_ids",
         "tags",
         "image_sets",
-        "descriptions",
         "package_packs",
         "categories",
         mode="before",

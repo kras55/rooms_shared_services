@@ -20,7 +20,7 @@ Issues = "https://github.com/kras55/rooms_shared_services/issues"
 
 [tool.poetry]
 name = "rooms_shared_services"
-version = "0.1.51"
+version = "0.1.61"
 description = ""
 authors = ["kras55 <dkras5577@gmail.com>"]
 readme = "README.md"

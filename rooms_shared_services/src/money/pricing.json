@@ -1,0 +1,8 @@
+{
+    "wc_retail_base_coeff": {
+        "halmar": 2
+    },
+    "wc_wholesale_base_coeff": {
+        "halmar": 1.5
+    }
+}

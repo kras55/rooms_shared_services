@@ -8,4 +8,4 @@ class Settings(BaseSettings):
     source_data_bucket: str
     source_data_object: str
     region_name: str
-    name_index: str
+    id_index: str
