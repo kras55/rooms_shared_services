@@ -76,7 +76,7 @@ class DynamodbStorageClient(AbstractStorageClient):
     def __call__(self):
         logger.info("Hello world")
 
-    def retrieve(self, key: dict, **call_params) -> dict:
+    def retrieve(self, key: dict, **call_params) -> dict | None:
         response = self.table.get_item(Key=key, **call_params)
         try:
             return response["Item"]
@@ -138,7 +138,7 @@ class DynamodbStorageClient(AbstractStorageClient):
     def delete(self, key: dict, **call_params) -> dict:
         return dict(self.table.delete_item(Key=key, **call_params))
 
-    def bulk_retrieve(self, keys: list[dict], **call_params) -> list[dict]:
+    def bulk_retrieve(self, keys: list[dict], **call_params) -> list[dict | None]:
         return [self.retrieve(key=key, **call_params) for key in keys]
 
     def bulk_create(self, table_items: list[dict], **call_params) -> None:
@@ -261,9 +261,31 @@ class DynamodbStorageClient(AbstractStorageClient):
             for data_elem_key, data_elem_value in data_item.items()
         }
 
-    def get_by_pages(self, page_size: int | None = 100, consistent_read: bool = False):
+    @staticmethod
+    def create_value_type(attr_value):
+        match attr_value:
+            case int():
+                return {"N": str(attr_value)}
+            case str():
+                return {"S": attr_value}
+
+    def create_pagination_filter_expression(self, filter_params: dict):
+        filter_elements = [
+            ("{} = :name_{}".format(key, idx), (":name_{}".format(idx), self.create_value_type(key_value)))
+            for idx, (key, key_value) in enumerate(filter_params.items())
+        ]
+        expression_elements = [elem[0] for elem in filter_elements]
+        attribute_elements = [elem[1] for elem in filter_elements]
+        filter_expression = ",".join(expression_elements)
+        attribute_value_dict = dict(attribute_elements)
+        return filter_expression, attribute_value_dict
+
+    def get_by_pages(self, page_size: int | None = 100, consistent_read: bool = False, filter_by: dict | None = None):
         paginator = self.client.get_paginator("scan")
         scan_params = {"TableName": self.table.name}
+        if filter_by:
+            filter_expression, attribute_values = self.create_pagination_filter_expression(filter_params=filter_by)
+            scan_params.update({"FilterExpression": filter_expression, "ExpressionAttributeValues": attribute_values})
         if page_size:
             scan_params.update({"PaginationConfig": {"PageSize": page_size}})
         for page in paginator.paginate(**scan_params, ConsistentRead=consistent_read):

@@ -157,15 +157,24 @@ class TestDatabaseConnection:  # noqa: WPS306
         scanned_items = self.table.scan()["Items"]
         assert not scanned_items
 
-    def test_pagination(self, attribute, item_key, put_result):
+    @pytest.mark.parametrize(["attr_match"], [(True,), (False,)])
+    def test_pagination(self, attribute: dict, item_key: dict, put_result, attr_match):
         assert isinstance(put_result, dict)
-        for batch in self.dynamodb_client.get_by_pages():
+        if attr_match:
+            filter_by = attribute
+        else:
+            filter_by = {attribute_key: fake.pyint() for attribute_key in attribute.keys()}
+        for batch in self.dynamodb_client.get_by_pages(filter_by=filter_by):
             assert isinstance(batch, list)
-            for result_item in batch:
-                logger.info("assert equal:")
-                for key in item_key.keys():
-                    logger.info(item_key[key])
-                    logger.info(result_item[key])
-                    logger.info("***")
-                    assert item_key[key] == result_item.pop(key)
-                assert result_item == attribute
+            if attr_match:
+                assert len(batch)
+                for result_item in batch:
+                    logger.info("assert equal:")
+                    [self.assert_item(item_key, key, result_item) for key in item_key.keys()]
+                    assert result_item == attribute
+            else:
+                assert not len(batch)
+
+    @staticmethod
+    def assert_item(item_key, key, result_item):
+        assert item_key[key] == result_item.pop(key)

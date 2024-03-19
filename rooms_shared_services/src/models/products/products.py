@@ -99,7 +99,8 @@ class PriceValueCollection(BaseDynamodbModel):
 
 
 class ProductSourceItem(BaseDynamodbModel):
-    id: UUID | None | UNSET = "UNSET"
+    id: UUID | UNSET = "UNSET"
+    product_group: str | UNSET = "UNSET"
     original_ident: str | None | UNSET = "UNSET"
     ident_code: str | None | UNSET = "UNSET"
     name: str | None | UNSET = "UNSET"
@@ -143,7 +144,7 @@ class ProductSourceItem(BaseDynamodbModel):
     ean: str | None | UNSET = "UNSET"
     withdrawn: bool | None | UNSET = "UNSET"
     pcn: str | None | UNSET = "UNSET"
-    categories: list[str] | None | UNSET = "UNSET"
+    categories_raw: list[str] | None | UNSET = "UNSET"
     wc_categories: RelatedValues | None | UNSET = "UNSET"
     published: RelatedValues | None | UNSET = "UNSET"
     wc_name_translations: TextTranslations | None | UNSET = "UNSET"
